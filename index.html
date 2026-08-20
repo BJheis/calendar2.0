@@ -132,9 +132,23 @@
     font-weight: 500;
   }
   .cell.today {
-    border-color: #ffe8b0;
-    box-shadow: 0 0 12px rgba(255,232,176,0.25);
-  }
+  border-color: #ffd866 !important;
+  box-shadow: 0 0 20px rgba(255, 216, 102, 0.5), inset 0 0 20px rgba(255, 216, 102, 0.08);
+  transform: scale(1.04);
+  position: relative;
+}
+.cell.today::after {
+  content: '';
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ffd866;
+  box-shadow: 0 0 8px rgba(255, 216, 102, 0.6);
+}
   .cell.has-mood {
     font-size: clamp(11px, 1.8vw, 16px);
     letter-spacing: 0;
