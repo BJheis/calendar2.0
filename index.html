@@ -740,4 +740,95 @@
   }
 
   // ---------- 事件绑定 ----------
-  doc
+  document.getElementById('prevMonth').addEventListener('click', () => {
+    if (currentMonth === 0) { currentMonth = 11; currentYear--; }
+    else currentMonth--;
+    render(true);
+  });
+
+  document.getElementById('nextMonth').addEventListener('click', () => {
+    if (currentMonth === 11) { currentMonth = 0; currentYear++; }
+    else currentMonth++;
+    render(true);
+  });
+
+  document.getElementById('todayBtn').addEventListener('click', goToToday);
+
+  pickerClose.addEventListener('click', () => picker.classList.remove('open'));
+  picker.addEventListener('click', (e) => { if (e.target === picker) picker.classList.remove('open'); });
+
+  document.getElementById('clearMonth').addEventListener('click', () => {
+    if (confirm(`确定要清空 ${currentYear}年 ${currentMonth+1}月 的所有心情记录吗？`)) {
+      const days = new Date(currentYear, currentMonth + 1, 0).getDate();
+      for (let d = 1; d <= days; d++) {
+        localStorage.removeItem(getKey(currentYear, currentMonth, d));
+      }
+      render(true);
+      showToast(`已清空 ${currentYear}年 ${currentMonth+1}月 的记录`);
+    }
+  });
+
+  document.getElementById('exportBtn').addEventListener('click', () => {
+    const data = {};
+    let count = 0;
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('mood_')) {
+        data[key] = localStorage.getItem(key);
+        count++;
+      }
+    }
+    if (count === 0) { showToast('没有数据可以导出'); return; }
+    const json = JSON.stringify(data, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const now = new Date();
+    a.download = `心情日历_${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast(`✅ 成功导出 ${count} 条记录`);
+  });
+
+  document.getElementById('importBtn').addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', function(e) {
+    if (this.files && this.files.length > 0) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = JSON.parse(e.target.result);
+          let count = 0, errorCount = 0;
+          for (const [key, value] of Object.entries(data)) {
+            if (key && key.startsWith('mood_') && typeof value === 'string') {
+              const datePart = key.replace('mood_', '');
+              if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
+                localStorage.setItem(key, value);
+                count++;
+              } else errorCount++;
+            } else errorCount++;
+          }
+          render(true);
+          if (errorCount > 0) showToast(`⚠️ 导入完成：${count} 条成功，${errorCount} 条跳过`);
+          else showToast(`✅ 成功导入 ${count} 条记录`);
+        } catch (err) {
+          showToast('❌ 文件格式错误，请选择正确的 JSON 文件');
+        }
+      };
+      reader.readAsText(this.files[0]);
+    }
+    this.value = '';
+  });
+
+  document.getElementById('statsBtn').addEventListener('click', openStats);
+  statsClose.addEventListener('click', () => statsOverlay.classList.remove('open'));
+  statsOverlay.addEventListener('click', (e) => { if (e.target === statsOverlay) statsOverlay.classList.remove('open'); });
+
+  // ---------- 初始渲染 ----------
+  render(false);
+  showToast('💡 点击日期记录心情，支持导出/导入备份', 2500);
+</script>
+</body>
+</html>
