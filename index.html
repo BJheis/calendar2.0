@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>017 的心情日历</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0b0b1a;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: 'Segoe UI', sans-serif;
+    padding: 12px;
+  }
+  .container {
+    background: #1a1a2e;
+    border-radius: 28px;
+    padding: 20px 16px 18px;
+    width: 100%;
+    max-width: 600px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+    color: #d0d8e8;
+  }
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .header .month {
+    font-size: 20px;
+    font-weight: 300;
+    letter-spacing: 1px;
+    color: #ffe8b0;
+  }
+  .header .nav {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .header .nav button {
+    background: transparent;
+    border: 1px solid #3a3a5c;
+    color: #8a9aaa;
+    padding: 3px 12px;
+    border-radius: 20px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+  .header .nav button:hover {
+    border-color: #ffe8b0;
+    color: #ffe8b0;
+    background: rgba(255,255,255,0.04);
+  }
+  .btn-today {
+    background: transparent;
+    border: 1px solid #3a3a5c;
+    color: #8a9aaa;
+    padding: 3px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+  .btn-today:hover {
+    border-color: #ffe8b0;
+    color: #ffe8b0;
+    background: rgba(255,255,255,0.04);
+  }
+  .weekday {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    text-align: center;
+    color: #6a7a8a;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+  }
+  .grid-wrapper {
+    overflow: hidden;
+    position: relative;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+  }
+  .grid.slide-out {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  .grid.slide-in {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  .grid.slide-in.active {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .cell {
+    aspect-ratio: 1 / 1.05;
+    background: #1e1e32;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    color: #d0d8e8;
+    cursor: pointer;
+    transition: 0.2s;
+    user-select: none;
+    border: 2px solid transparent;
+    position: relative;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 0 2px;
+    min-width: 0;
+    font-weight: 500;
+  }
+  .cell.today {
+    border-color: #ffe8b0;
+    box-shadow: 0 0 12px rgba(255,232,176,0.25);
+  }
+  .cell.has-mood {
+    font-size: clamp(11px, 1.8vw, 16px);
+    letter-spacing: 0;
+    font-weight: 500;
+  }
+  .cell:hover { border-color: #4a4a6a; background: #26263e; }
+  .cell.empty { opacity: 0.2; pointer-events: none; }
+  .cell.has-mood { border-color: #4a4a6a; }
+
+  /* ---- 统计弹窗 ---- */
+  .stats-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(6px);
+    justify-content: center;
+    align-items: center;
+    z-index: 300;
+  }
+  .stats-overlay.open { display: flex; }
+  .stats-box {
+    background: #1a1a2e;
+    border-radius: 28px;
+    padding: 24px 20px 20px;
+    max-width: 420px;
+    width: 92%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.8);
+    animation: popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  @keyframes popIn {
+    0% { transform: scale(0.7); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .stats-box h2 {
+    color: #ffe8b0;
+    font-weight: 300;
+    font-size: 22px;
+    text-align: center;
+    margin-bottom: 16px;
+    letter-spacing: 1px;
+  }
+  .stats-section {
+    margin-bottom: 18px;
+  }
+  .stats-section h3 {
+    color: #8a9aaa;
+    font-size: 14px;
+    font-weight: 400;
+    border-bottom: 1px solid #2a2a44;
+    padding-bottom: 6px;
+    margin-bottom: 10px;
+  }
+  .stats-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 0;
+    font-size: 14px;
+    color: #d0d8e8;
+  }
+  .stats-row .emoji { font-size: 18px; min-width: 32px; text-align: center; }
+  .stats-row .label { min-width: 36px; color: #8a9aaa; font-size: 12px; }
+  .stats-row .bar-wrap {
+    flex: 1;
+    height: 14px;
+    background: #1e1e32;
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+  }
+  .stats-row .bar-fill {
+    height: 100%;
+    border-radius: 8px;
+    transition: width 0.6s ease;
+    width: 0%;
+  }
+  .stats-row .count {
+    min-width: 28px;
+    text-align: right;
+    font-size: 13px;
+    color: #8a9aaa;
+  }
+  .stats-empty {
+    color: #4a5a6a;
+    text-align: center;
+    font-size: 14px;
+    padding: 12px 0;
+  }
+  .stats-close {
+    display: block;
+    margin: 6px auto 0;
+    background: transparent;
+    border: 1px solid #3a3a5c;
+    color: #8a9aaa;
+    padding: 6px 32px;
+    border-radius: 24px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+  .stats-close:hover { border-color: #ffe8b0; color: #ffe8b0; }
+
+  /* ---- 心情选择弹窗 ---- */
+  .mood-picker {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(6px);
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+  }
+  .mood-picker.open { display: flex; }
+  .mood-box {
+    background: #1a1a2e;
+    border-radius: 28px;
+    padding: 24px 16px 20px;
+    max-width: 400px;
+    width: 92%;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.8);
+    text-align: center;
+  }
+  .mood-box .date-label {
+    color: #8a9aaa;
+    font-size: 13px;
+    letter-spacing: 1px;
+    margin-bottom: 14px;
+  }
+  .mood-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin: 6px 0 16px;
+  }
+  .mood-btn {
+    background: #1e1e32;
+    border: 1px solid #2a2a44;
+    border-radius: 16px;
+    padding: 10px 2px;
+    font-size: 16px;
+    color: #d0d8e8;
+    cursor: pointer;
+    transition: 0.25s;
+    text-align: center;
+    line-height: 1.3;
+    white-space: nowrap;
+  }
+  .mood-btn:hover { background: #2a2a48; border-color: #ffe8b0; }
+  .mood-btn .label {
+    display: block;
+    font-size: 10px;
+    color: #8a9aaa;
+    margin-top: 2px;
+  }
+  .mood-close {
+    background: transparent;
+    border: 1px solid #3a3a5c;
+    color: #8a9aaa;
+    padding: 6px 28px;
+    border-radius: 24px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+  .mood-close:hover { border-color: #ffe8b0; color: #ffe8b0; }
+
+  /* ---- 底部 ---- */
+  .footer {
+    margin-top: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    color: #4a5a6a;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .footer .left-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .footer .btn-action {
+    background: transparent;
+    border: 1px solid #3a3a5c;
+    color: #8a9aaa;
+    padding: 4px 12px;
+    border-radius: 16px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+  .footer .btn-action:hover {
+    border-color: #ffe8b0;
+    color: #ffe8b0;
+    background: rgba(255,255,255,0.04);
+  }
+  .footer .clear-btn {
+    background: transparent;
+    border: none;
+    color: #4a5a6a;
+    cursor: pointer;
+    font-size: 11px;
+    transition: 0.3s;
+  }
+  .footer .clear-btn:hover { color: #8a7a7a; }
+  .legend {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .legend span {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 11px;
+    color: #6a7a8a;
+  }
+  .legend .dot {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 6px;
+  }
+
+  #fileInput { display: none; }
+
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #2a2a4a;
+    color: #d0d8e8;
+    padding: 12px 24px;
+    border-radius: 20px;
+    border: 1px solid #4a4a6a;
+    font-size: 14px;
+    z-index: 200;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+    backdrop-filter: blur(10px);
+  }
+  .toast.show { opacity: 1; }
+
+  /* ---- 响应式 ---- */
+  @media (max-width: 480px) {
+    .container { padding: 16px 10px 14px; border-radius: 22px; max-width: 100%; }
+    .grid { gap: 5px; }
+    .cell.has-mood { font-size: clamp(10px, 2.2vw, 14px); }
+    .cell { font-size: 13px; }
+    .weekday { font-size: 11px; }
+    .footer .left-actions { gap: 6px; }
+    .footer .btn-action { font-size: 10px; padding: 3px 10px; }
+    .header .month { font-size: 17px; }
+    .btn-today { font-size: 12px; padding: 2px 10px; }
+    .header .nav button { font-size: 12px; padding: 2px 10px; }
+  }
+  @media (max-width: 380px) {
+    .grid { gap: 4px; }
+    .cell.has-mood { font-size: clamp(9px, 2vw, 12px); }
+    .cell { font-size: 12px; border-radius: 8px; }
+  }
+  @media (min-width: 601px) {
+    .container { max-width: 700px; padding: 30px 24px 24px; }
+    .grid { gap: 8px; }
+    .cell.has-mood { font-size: clamp(14px, 1.6vw, 20px); }
+    .cell { font-size: 18px; border-radius: 16px; }
+    .weekday { font-size: 14px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container" id="app">
+  <div class="header">
+    <div class="header-left">
+      <div class="month" id="monthLabel">2026年8月</div>
+      <button class="btn-today" id="todayBtn">今天</button>
+    </div>
+    <div class="nav">
+      <button id="prevMonth">◀</button>
+      <button id="nextMonth">▶</button>
+    </div>
+  </div>
+  <div class="weekday">
+    <span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span>
+  </div>
+  <div class="grid-wrapper">
+    <div class="grid" id="grid"></div>
+  </div>
+  <div class="footer">
+    <div class="left-actions">
+      <div class="legend">
+        <span><span class="dot" style="background:#f0e6a0;"></span>开心</span>
+        <span><span class="dot" style="background:#9ab8d9;"></span>平静</span>
+        <span><span class="dot" style="background:#d9b8c8;"></span>难过</span>
+        <span><span class="dot" style="background:#d9a0a0;"></span>生气</span>
+      </div>
+    </div>
+    <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+      <button class="btn-action" id="statsBtn">🌟 统计</button>
+      <button class="btn-action" id="exportBtn">📤 导出</button>
+      <button class="btn-action" id="importBtn">📥 导入</button>
+      <button class="clear-btn" id="clearMonth">清空本月</button>
+    </div>
+  </div>
+</div>
+
+<!-- 心情选择弹窗 -->
+<div class="mood-picker" id="picker">
+  <div class="mood-box">
+    <div class="date-label" id="pickerDate">8月20日</div>
+    <div class="mood-grid" id="moodGrid"></div>
+    <button class="mood-close" id="pickerClose">取消</button>
+  </div>
+</div>
+
+<!-- 统计弹窗 -->
+<div class="stats-overlay" id="statsOverlay">
+  <div class="stats-box" id="statsBox">
+    <h2>🌟 心情统计</h2>
+    <div id="statsContent"></div>
+    <button class="stats-close" id="statsClose">关闭</button>
+  </div>
+</div>
+
+<input type="file" id="fileInput" accept=".json">
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ---------- 颜文字列表 ----------
+  const MOODS = [
+    { key: '迷茫', emoji: '(o_o)…' },
+    { key: '震惊', emoji: '(O_o)!' },
+    { key: '心动', emoji: '(owo)♡' },
+    { key: '开心', emoji: '(ovo)' },
+    { key: '不开心', emoji: '(x_x)' },
+    { key: '惊喜', emoji: '(ovo)!' },
+    { key: '崩溃', emoji: '(T﹏T)' },
+    { key: '别扭', emoji: '(ono)' },
+    { key: '生气', emoji: '(◣_◢)' },
+    { key: '无语', emoji: '(-_-)' },
+    { key: '平静', emoji: '(-v-)' },
+    { key: '犯困', emoji: '(--)zzz' },
+    { key: '害羞', emoji: '(>m<)' },
+    { key: '感动', emoji: '(QuQ)' },
+    { key: '疑惑', emoji: '(O_o)?' }
+  ];
+
+  const COLOR_MAP = {
+    '(ovo)': '#f0e6a0',
+    '(ovo)!': '#f0d070',
+    '(owo)♡': '#f0b0c0',
+    '(o_o)…': '#c0c8d8',
+    '(O_o)!': '#e0c080',
+    '(x_x)': '#d9b8c8',
+    '(T﹏T)': '#d0a0b0',
+    '(ono)': '#b8b0c8',
+    '(◣_◢)': '#d9a0a0',
+    '(-_-)': '#b0b8c8',
+    '(-v-)': '#9ab8d9',
+    '(--)zzz': '#b0b8c0',
+    '(>m<)': '#f0b0b0',
+    '(QuQ)': '#f0d0a0',
+    '(O_o)?': '#c8b890'
+  };
+
+  // ---------- 状态 ----------
+  const now = new Date();
+  let currentYear = now.getFullYear();
+  let currentMonth = now.getMonth();
+  let selectedDate = null;
+
+  // ---------- DOM ----------
+  const grid = document.getElementById('grid');
+  const monthLabel = document.getElementById('monthLabel');
+  const picker = document.getElementById('picker');
+  const pickerDate = document.getElementById('pickerDate');
+  const moodGrid = document.getElementById('moodGrid');
+  const pickerClose = document.getElementById('pickerClose');
+  const fileInput = document.getElementById('fileInput');
+  const toast = document.getElementById('toast');
+  const statsOverlay = document.getElementById('statsOverlay');
+  const statsContent = document.getElementById('statsContent');
+  const statsClose = document.getElementById('statsClose');
+
+  let isAnimating = false;
+
+  // ---------- Toast ----------
+  let toastTimer = null;
+  function showToast(msg, duration = 2000) {
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { toast.classList.remove('show'); }, duration);
+  }
+
+  // ---------- 存储 ----------
+  function getKey(year, month, day) {
+    return `mood_${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+  }
+  function loadMood(year, month, day) {
+    return localStorage.getItem(getKey(year, month, day)) || null;
+  }
+  function saveMood(year, month, day, val) {
+    const key = getKey(year, month, day);
+    if (val) localStorage.setItem(key, val);
+    else localStorage.removeItem(key);
+  }
+
+  // ---------- 渲染 ----------
+  function render(animate = false) {
+    const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    let startOffset = (firstDay === 0) ? 6 : firstDay - 1;
+
+    monthLabel.textContent = `${currentYear}年 ${currentMonth+1}月`;
+
+    const today = new Date();
+    const isTodayMonth = (currentYear === today.getFullYear() && currentMonth === today.getMonth());
+
+    const wrapper = grid.parentElement;
+    if (animate && !isAnimating) {
+      isAnimating = true;
+      grid.classList.add('slide-out');
+      setTimeout(() => {
+        buildGrid(startOffset, daysInMonth, isTodayMonth, today);
+        grid.classList.remove('slide-out');
+        grid.classList.add('slide-in');
+        requestAnimationFrame(() => {
+          grid.classList.add('active');
+        });
+        setTimeout(() => {
+          grid.classList.remove('slide-in', 'active');
+          isAnimating = false;
+        }, 300);
+      }, 200);
+    } else {
+      buildGrid(startOffset, daysInMonth, isTodayMonth, today);
+    }
+  }
+
+  function buildGrid(startOffset, daysInMonth, isTodayMonth, today) {
+    grid.innerHTML = '';
+    const total = Math.ceil((startOffset + daysInMonth) / 7) * 7;
+    for (let i = 0; i < total; i++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      if (i < startOffset || i >= startOffset + daysInMonth) {
+        cell.classList.add('empty');
+        grid.appendChild(cell);
+        continue;
+      }
+      const day = i - startOffset + 1;
+      const mood = loadMood(currentYear, currentMonth, day);
+      if (mood) {
+        cell.textContent = mood;
+        cell.classList.add('has-mood');
+        const bg = COLOR_MAP[mood] || '#2a2a44';
+        cell.style.background = bg;
+        cell.style.color = '#0b0b1a';
+      } else {
+        cell.textContent = day;
+        cell.style.background = '#1e1e32';
+        cell.style.color = '#d0d8e8';
+      }
+      // 今天高亮（金色光圈）
+      if (isTodayMonth && day === today.getDate()) {
+        cell.classList.add('today');
+      }
+      cell.addEventListener('click', () => {
+        selectedDate = { year: currentYear, month: currentMonth, day };
+        openPicker(selectedDate);
+      });
+      grid.appendChild(cell);
+    }
+  }
+
+  // ---------- 跳转到今天 ----------
+  function goToToday() {
+    const now = new Date();
+    currentYear = now.getFullYear();
+    currentMonth = now.getMonth();
+    render(true);
+    showToast('📅 已回到今天');
+  }
+
+  // ---------- 选择器 ----------
+  function openPicker(date) {
+    const { year, month, day } = date;
+    pickerDate.textContent = `${year}年 ${month+1}月${day}日`;
+    moodGrid.innerHTML = '';
+    MOODS.forEach(m => {
+      const btn = document.createElement('button');
+      btn.className = 'mood-btn';
+      btn.innerHTML = `${m.emoji}<span class="label">${m.key}</span>`;
+      btn.addEventListener('click', () => {
+        saveMood(year, month, day, m.emoji);
+        picker.classList.remove('open');
+        render(true);
+        showToast(`✅ 已记录 ${m.emoji} ${m.key}`);
+      });
+      moodGrid.appendChild(btn);
+    });
+    picker.classList.add('open');
+  }
+
+  // ---------- 统计 ----------
+  function openStats() {
+    const allData = {};
+    let totalCount = 0;
+    const monthCount = {};
+
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('mood_')) {
+        const val = localStorage.getItem(key);
+        if (val && COLOR_MAP[val]) {
+          allData[key] = val;
+          totalCount++;
+          // 提取月份
+          const datePart = key.replace('mood_', '');
+          const monthKey = datePart.substring(0, 7); // "2026-08"
+          if (!monthCount[monthKey]) monthCount[monthKey] = {};
+          monthCount[monthKey][val] = (monthCount[monthKey][val] || 0) + 1;
+        }
+      }
+    }
+
+    // 本月 key
+    const thisMonthKey = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}`;
+
+    let html = '';
+
+    // ---- 本月统计 ----
+    html += `<div class="stats-section">`;
+    html += `<h3>✨ ${currentYear}年${currentMonth+1}月 (本月)</h3>`;
+    const thisMonthData = monthCount[thisMonthKey] || {};
+    const thisMonthEntries = Object.entries(thisMonthData).sort((a,b) => b[1] - a[1]);
+    if (thisMonthEntries.length === 0) {
+      html += `<div class="stats-empty">本月还没有记录哦 💭</div>`;
+    } else {
+      const max = thisMonthEntries[0][1];
+      thisMonthEntries.forEach(([emoji, count]) => {
+        html += buildStatsRow(emoji, count, max);
+      });
+    }
+    html += `</div>`;
+
+    // ---- 总计 ----
+    html += `<div class="stats-section">`;
+    html += `<h3>📦 总计 (所有月份)</h3>`;
+    const totalMap = {};
+    Object.values(allData).forEach(emoji => {
+      totalMap[emoji] = (totalMap[emoji] || 0) + 1;
+    });
+    const totalEntries = Object.entries(totalMap).sort((a,b) => b[1] - a[1]);
+    if (totalEntries.length === 0) {
+      html += `<div class="stats-empty">还没有任何记录哦 💭</div>`;
+    } else {
+      const max = totalEntries[0][1];
+      totalEntries.forEach(([emoji, count]) => {
+        html += buildStatsRow(emoji, count, max);
+      });
+    }
+    html += `</div>`;
+
+    statsContent.innerHTML = html;
+    statsOverlay.classList.add('open');
+
+    // 动画延迟触发进度条
+    setTimeout(() => {
+      document.querySelectorAll('.bar-fill').forEach(el => {
+        const w = el.getAttribute('data-width');
+        if (w) el.style.width = w;
+      });
+    }, 100);
+  }
+
+  function buildStatsRow(emoji, count, max) {
+    const pct = max > 0 ? (count / max * 100) : 0;
+    const color = COLOR_MAP[emoji] || '#4a4a6a';
+    return `
+      <div class="stats-row">
+        <span class="emoji">${emoji}</span>
+        <span class="label">${MOODS.find(m => m.emoji === emoji)?.key || ''}</span>
+        <div class="bar-wrap">
+          <div class="bar-fill" data-width="${pct}%" style="background:${color}; width:0%;"></div>
+        </div>
+        <span class="count">${count}</span>
+      </div>
+    `;
+  }
+
+  // ---------- 事件绑定 ----------
+  doc
