@@ -39,6 +39,7 @@
   .header .nav {
     display: flex;
     gap: 8px;
+    align-items: center;
   }
   .header .nav button {
     background: transparent;
@@ -54,6 +55,15 @@
     border-color: #ffe8b0;
     color: #ffe8b0;
     background: rgba(255,255,255,0.04);
+  }
+  .header .nav .today-btn {
+    border-color: #ffe8b0;
+    color: #ffe8b0;
+    font-size: 13px;
+    padding: 3px 14px;
+  }
+  .header .nav .today-btn:hover {
+    background: rgba(255,232,176,0.15);
   }
   .weekday {
     display: grid;
@@ -258,14 +268,15 @@
     margin-bottom: 4px;
   }
   .stats-bar-label {
-    width: 32px;
-    font-size: 18px;
+    font-size: 16px;
     text-align: center;
     flex-shrink: 0;
+    min-width: 36px;
+    color: #d0d8e8;
   }
   .stats-bar-track {
     flex: 1;
-    height: 20px;
+    height: 12px;
     background: #1e1e32;
     border-radius: 10px;
     overflow: hidden;
@@ -281,7 +292,7 @@
   .stats-bar-count {
     font-size: 12px;
     color: #8a9aaa;
-    min-width: 30px;
+    min-width: 28px;
     text-align: right;
     flex-shrink: 0;
     font-weight: 600;
@@ -341,6 +352,24 @@
       font-size: 10px;
       padding: 3px 10px;
     }
+    .header .nav .today-btn {
+      font-size: 11px;
+      padding: 2px 10px;
+    }
+    .header .month {
+      font-size: 17px;
+    }
+    .stats-bar-label {
+      font-size: 14px;
+      min-width: 30px;
+    }
+    .stats-bar-track {
+      height: 10px;
+    }
+    .stats-bar-count {
+      font-size: 11px;
+      min-width: 24px;
+    }
   }
 
   @media (max-width: 380px) {
@@ -353,6 +382,10 @@
     .cell {
       font-size: 12px;
       border-radius: 8px;
+    }
+    .stats-bar-label {
+      font-size: 12px;
+      min-width: 26px;
     }
   }
 
@@ -374,6 +407,10 @@
     .weekday {
       font-size: 14px;
     }
+    .stats-bar-label {
+      font-size: 18px;
+      min-width: 40px;
+    }
   }
 </style>
 </head>
@@ -383,6 +420,7 @@
   <div class="header">
     <div class="month" id="monthLabel">2026年8月</div>
     <div class="nav">
+      <button class="today-btn" id="todayBtn">今天</button>
       <button id="prevMonth">◀</button>
       <button id="nextMonth">▶</button>
     </div>
@@ -401,7 +439,6 @@
       </div>
     </div>
     <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-      <button class="btn-action" id="todayBtn">今天</button>
       <button class="btn-action" id="statsBtn">🌟统计</button>
       <button class="btn-action" id="exportBtn">📤 导出</button>
       <button class="btn-action" id="importBtn">📥 导入</button>
@@ -704,7 +741,7 @@
     const maxCount = sortedTotal.length > 0 ? sortedTotal[0][1] : 0;
     
     if (sortedTotal.length === 0) {
-      html += `<div class="stats-empty">还没有记录呢，去填满你的心情吧</div>`;
+      html += `<div class="stats-empty">💕 还没有记录呢，去填满你的心情吧</div>`;
     } else {
       html += `<div class="stats-total-grid">`;
       sortedTotal.forEach(([mood, count]) => {
@@ -713,7 +750,7 @@
         html += `
           <div style="background: #1a1a2e; border-radius: 10px; padding: 10px 10px 8px; border: 1px solid #2a2a44;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-              <span style="font-size: 16px;">${mood}</span>
+              <span style="font-size: 16px; color: #d0d8e8;">${mood}</span>
               <span style="font-size: 13px; color: #d0d8e8; font-weight: 600;">${count}次</span>
             </div>
             <div class="stats-bar-track" style="height: 12px;">
@@ -748,8 +785,8 @@
           const percent = monthMax > 0 ? (count / monthMax * 100) : 0;
           html += `
             <div class="stats-bar-wrap">
-              <span class="stats-bar-label">${mood}</span>
-              <div class="stats-bar-track" style="height: 16px;">
+              <span class="stats-bar-label" style="color: #d0d8e8;">${mood}</span>
+              <div class="stats-bar-track" style="height: 12px;">
                 <div class="stats-bar-fill" style="width: ${percent}%; background: ${bg};"></div>
               </div>
               <span class="stats-bar-count">${count}</span>
@@ -805,7 +842,7 @@
   document.getElementById('statsBtn').addEventListener('click', () => {
     renderStats();
     document.getElementById('statsPicker').classList.add('open');
-    showToast('你的每一天我都会记住', 2000);
+    showToast('✨ 你的每一天我都会记住', 2000);
   });
 
   document.getElementById('statsClose').addEventListener('click', () => {
