@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>017 的心情日历</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0b0b1a;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: 'Segoe UI', sans-serif;
+    padding: 12px;
+  }
+  .container {
+    background: #1a1a2e;
+    border-radius: 28px;
+    padding: 20px 16px 18px;
+    width: 100%;
+    max-width: 600px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+    color: #d0d8e8;
+  }
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+  .header .month {
+    font-size: 20px;
+    font-weight: 300;
+    letter-spacing: 1px;
+    color: #ffe8b0;
+  }
+  .header .nav {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .header .nav button {
+    background: transparent;
+    border: 1px solid #3a3a5c;
+    color: #8a9aaa;
+    padding: 3px 12px;
+    border-radius: 20px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+  .header .nav button:hover {
+    border-color: #ffe8b0;
+    color: #ffe8b0;
+    background: rgba(255,255,255,0.04);
+  }
+  .header .nav .today-btn {
+    border-color: #ffe8b0;
+    color: #ffe8b0;
+    font-size: 13px;
+    padding: 3px 14px;
+  }
+  .header .nav .today-btn:hover {
+    background: rgba(255,232,176,0.15);
+  }
+  .weekday {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    text-align: center;
+    color: #6a7a8a;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+  }
+  .cell {
+    aspect-ratio: 1 / 1.05;
+    background: #1e1e32;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    color: #d0d8e8;
+    cursor: pointer;
+    transition: 0.2s;
+    user-select: none;
+    border: 1px solid transparent;
+    position: relative;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 0 2px;
+    min-width: 0;
+    font-weight: 500;
+  }
+  .cell.has-mood {
+    font-size: clamp(11px, 1.8vw, 16px);
+    letter-spacing: 0;
+    font-weight: 500;
+  }
+  .cell:hover { border-color: #4a4a6a; background: #26263e; }
+  .cell.empty { opacity: 0.2; pointer-events: none; }
+  .cell.has-mood { border-color: #4a4a6a; }
+
+  .mood-picker {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(6px);
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+  }
+  .mood-picker.open { display: flex; }
+  .mood-box {
+    background: #1a1a2e;
+    border-radius: 28px;
+    padding: 24px 16px 20px;
+    max-width: 400px;
+    width: 92%;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.8);
+    text-align: center;
+  }
+  .mood-box .date-label {
+    color: #8a9aaa;
+    font-size: 13px;
+    letter-spacing: 1px;
+    margin-bottom: 14px;
+  }
+  .mood-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin: 6px 0 16px;
+  }
+  .mood-btn {
+    background: #1e1e32;
+    border: 1px solid #2a2a44;
+    border-radius: 16px;
+    padding: 10px 2px;
+    font-size: 16px;
+    color: #d0d8e8;
+    cursor: pointer;
+    transition: 0.25s;
+    text-align: center;
+    line-height: 1.3;
+    white-space: nowrap;
+  }
+  .mood-btn:hover { background: #2a2a48; border-color: #ffe8b0; }
+  .mood-btn .label {
+    display: block;
+    font-size: 10px;
+    color: #8a9aaa;
+    margin-top: 2px;
+  }
+  .mood-close {
+    background: transparent;
+    border: 1px solid #3a3a5c;
+    color: #8a9aaa;
+    padding: 6px 28px;
+    border-radius: 24px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+  .mood-close:hover { border-color: #ffe8b0; color: #ffe8b0; }
+
+  .footer {
+    margin-top: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    color: #4a5a6a;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .footer .left-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .footer .btn-action {
+    background: transparent;
+    border: 1px solid #3a3a5c;
+    color: #8a9aaa;
+    padding: 4px 12px;
+    border-radius: 16px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+  .footer .btn-action:hover {
+    border-color: #ffe8b0;
+    color: #ffe8b0;
+    background: rgba(255,255,255,0.04);
+  }
+  .footer .clear-btn {
+    background: transparent;
+    border: none;
+    color: #4a5a6a;
+    cursor: pointer;
+    font-size: 11px;
+    transition: 0.3s;
+  }
+  .footer .clear-btn:hover { color: #8a7a7a; }
+  .legend {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .legend span {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 11px;
+    color: #6a7a8a;
+  }
+  .legend .dot {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 6px;
+  }
+
+  /* 隐藏的文件输入 */
+  #fileInput {
+    display: none;
+  }
+
+  /* Toast 提示 */
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #2a2a4a;
+    color: #d0d8e8;
+    padding: 12px 24px;
+    border-radius: 20px;
+    border: 1px solid #4a4a6a;
+    font-size: 14px;
+    z-index: 200;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+    backdrop-filter: blur(10px);
+  }
+  .toast.show {
+    opacity: 1;
+  }
+
+  /* 统计弹窗样式 */
+  .stats-tab {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    justify-content: center;
+  }
+  .stats-tab button {
+    background: transparent;
+    border: 1px solid #3a3a5c;
+    color: #8a9aaa;
+    padding: 5px 20px;
+    border-radius: 20px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+  .stats-tab button:hover {
+    border-color: #ffe8b0;
+    color: #ffe8b0;
+  }
+  .stats-tab button.active {
+    border-color: #ffe8b0;
+    color: #ffe8b0;
+    background: rgba(255,232,176,0.08);
+  }
+
+  .stats-content {
+    min-height: 200px;
+  }
+  .stats-content .stats-panel {
+    display: none;
+  }
+  .stats-content .stats-panel.active {
+    display: block;
+  }
+
+  /* 总计网格 */
+  .stats-total-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 6px;
+  }
+  .stats-total-item {
+    background: #1a1a2e;
+    border-radius: 10px;
+    padding: 10px 10px 8px;
+    border: 1px solid #2a2a44;
+  }
+  .stats-total-item .top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+  }
+  .stats-total-item .emoji {
+    font-size: 16px;
+    color: #d0d8e8;
+  }
+  .stats-total-item .count {
+    font-size: 13px;
+    color: #d0d8e8;
+    font-weight: 600;
+  }
+  .stats-total-item .bar-track {
+    height: 12px;
+    background: #1e1e32;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid #2a2a44;
+  }
+  .stats-total-item .bar-fill {
+    height: 100%;
+    border-radius: 10px;
+    transition: width 0.6s ease;
+    width: 0%;
+  }
+
+  /* 月度统计卡片 */
+  .stats-month-item {
+    background: #16162a;
+    border-radius: 12px;
+    padding: 10px 14px;
+    margin-bottom: 10px;
+  }
+  .stats-month-header {
+    color: #8a9aaa;
+    font-size: 13px;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .stats-month-total {
+    color: #6a7a8a;
+    font-size: 12px;
+  }
+  .stats-month-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+    margin-bottom: 4px;
+  }
+  .stats-month-row .emoji-box {
+    width: 120px;
+    text-align: center;
+    flex-shrink: 0;
+    font-size: 16px;
+    color: #d0d8e8;
+    white-space: nowrap;
+  }
+  .stats-month-row .bar-track {
+    flex: 0 0 150px;
+    height: 12px;
+    background: #1e1e32;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid #2a2a44;
+  }
+  .stats-month-row .bar-fill {
+    height: 100%;
+    border-radius: 10px;
+    transition: width 0.6s ease;
+    width: 0%;
+  }
+  .stats-month-row .count {
+    font-size: 12px;
+    color: #8a9aaa;
+    min-width: 32px;
+    text-align: right;
+    flex-shrink: 0;
+    font-weight: 600;
+  }
+
+  .stats-empty {
+    color: #6a7a8a;
+    text-align: center;
+    padding: 30px 0;
+  }
+
+  /* 小屏适配 */
+  @media (max-width: 480px) {
+    .container {
+      padding: 16px 10px 14px;
+      border-radius: 22px;
+      max-width: 100%;
+    }
+    .grid {
+      gap: 5px;
+    }
+    .cell.has-mood {
+      font-size: clamp(10px, 2.2vw, 14px);
+    }
+    .cell {
+      font-size: 13px;
+    }
+    .weekday {
+      font-size: 11px;
+    }
+    .footer .left-actions {
+      gap: 6px;
+    }
+    .footer .btn-action {
+      font-size: 10px;
+      padding: 3px 10px;
+    }
+    .header .nav .today-btn {
+      font-size: 11px;
+      padding: 2px 10px;
+    }
+    .header .month {
+      font-size: 17px;
+    }
+    .stats-month-row .emoji-box {
+      width: 36px;
+      font-size: 14px;
+    }
+    .stats-tab button {
+      font-size: 12px;
+      padding: 4px 14px;
+    }
+  }
+
+  @media (max-width: 380px) {
+    .grid {
+      gap: 4px;
+    }
+    .cell.has-mood {
+      font-size: clamp(9px, 2vw, 12px);
+    }
+    .cell {
+      font-size: 12px;
+      border-radius: 8px;
+    }
+    .stats-month-row .emoji-box {
+      width: 30px;
+      font-size: 12px;
+    }
+  }
+
+  @media (min-width: 601px) {
+    .container {
+      max-width: 700px;
+      padding: 30px 24px 24px;
+    }
+    .grid {
+      gap: 8px;
+    }
+    .cell.has-mood {
+      font-size: clamp(14px, 1.6vw, 20px);
+    }
+    .cell {
+      font-size: 18px;
+      border-radius: 16px;
+    }
+    .weekday {
+      font-size: 14px;
+    }
+    .stats-month-row .emoji-box {
+      width: 50px;
+      font-size: 18px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="container" id="app">
+  <div class="header">
+    <div class="month" id="monthLabel">2026年8月</div>
+    <div class="nav">
+      <button class="today-btn" id="todayBtn">今天</button>
+      <button id="prevMonth">◀</button>
+      <button id="nextMonth">▶</button>
+    </div>
+  </div>
+  <div class="weekday">
+    <span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span>
+  </div>
+  <div class="grid" id="grid"></div>
+  <div class="footer">
+    <div class="left-actions">
+      <div class="legend">
+        <span><span class="dot" style="background:#f0e6a0;"></span>开心</span>
+        <span><span class="dot" style="background:#9ab8d9;"></span>平静</span>
+        <span><span class="dot" style="background:#d9b8c8;"></span>难过</span>
+        <span><span class="dot" style="background:#d9a0a0;"></span>生气</span>
+      </div>
+    </div>
+    <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+      <button class="btn-action" id="statsBtn">🌟统计</button>
+      <button class="btn-action" id="exportBtn">📤 导出</button>
+      <button class="btn-action" id="importBtn">📥 导入</button>
+      <button class="clear-btn" id="clearMonth">清空本月</button>
+    </div>
+  </div>
+</div>
+
+<!-- 心情选择弹窗 -->
+<div class="mood-picker" id="picker">
+  <div class="mood-box">
+    <div class="date-label" id="pickerDate">8月20日</div>
+    <div class="mood-grid" id="moodGrid"></div>
+    <button class="mood-close" id="pickerClose">取消</button>
+  </div>
+</div>
+
+<!-- 统计弹窗 -->
+<div class="mood-picker" id="statsPicker">
+  <div class="mood-box" style="max-width: 520px; max-height: 80vh; overflow-y: auto;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+      <div class="date-label" style="margin-bottom: 0; font-size: 18px; color: #ffe8b0;">🌟 心情统计</div>
+      <button class="mood-close" id="statsClose" style="padding: 2px 16px; font-size: 16px;">✕</button>
+    </div>
+
+    <!-- Tab 切换按钮 -->
+    <div class="stats-tab">
+      <button class="active" data-tab="total">✨ 总计</button>
+      <button data-tab="monthly">📅 按月统计</button>
+    </div>
+
+    <!-- 内容区域 -->
+    <div class="stats-content" id="statsContent">
+      <div class="stats-panel active" id="panel-total"></div>
+      <div class="stats-panel" id="panel-monthly"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 隐藏的文件输入 -->
+<input type="file" id="fileInput" accept=".json">
+
+<!-- Toast 提示 -->
+<div class="toast" id="toast"></div>
+
+<script>
+  // ---------- 颜文字列表 ----------
+  const MOODS = [
+    { key: '迷茫', emoji: '(o_o)…' },
+    { key: '震惊', emoji: '(O_o)!' },
+    { key: '心动', emoji: '(owo)♡' },
+    { key: '开心', emoji: '(ovo)' },
+    { key: '不开心', emoji: '(x_x)' },
+    { key: '惊喜', emoji: '(ovo)!' },
+    { key: '崩溃', emoji: '(T﹏T)' },
+    { key: '别扭', emoji: '(ono)' },
+    { key: '生气', emoji: '(◣_◢)' },
+    { key: '无语', emoji: '(-_-)' },
+    { key: '平静', emoji: '(-v-)' },
+    { key: '犯困', emoji: '(--)zzz' },
+    { key: '害羞', emoji: '(>m<)' },
+    { key: '感动', emoji: '(QuQ)' },
+    { key: '疑惑', emoji: '(O_o)?' }
+  ];
+
+  // 颜色映射
+  const COLOR_MAP = {
+    '(ovo)': '#f0e6a0',
+    '(ovo)!': '#f0d070',
+    '(owo)♡': '#f0b0c0',
+    '(o_o)…': '#c0c8d8',
+    '(O_o)!': '#e0c080',
+    '(x_x)': '#d9b8c8',
+    '(T﹏T)': '#d0a0b0',
+    '(ono)': '#b8b0c8',
+    '(◣_◢)': '#d9a0a0',
+    '(-_-)': '#b0b8c8',
+    '(-v-)': '#9ab8d9',
+    '(--)zzz': '#b0b8c0',
+    '(>m<)': '#f0b0b0',
+    '(QuQ)': '#f0d0a0',
+    '(O_o)?': '#c8b890'
+  };
+
+  // ---------- 状态 ----------
+  let currentYear = 2026;
+  let currentMonth = 7;
+  let selectedDate = null;
+
+  // ---------- DOM ----------
+  const grid = document.getElementById('grid');
+  const monthLabel = document.getElementById('monthLabel');
+  const picker = document.getElementById('picker');
+  const pickerDate = document.getElementById('pickerDate');
+  const moodGrid = document.getElementById('moodGrid');
+  const pickerClose = document.getElementById('pickerClose');
+  const fileInput = document.getElementById('fileInput');
+  const toast = document.getElementById('toast');
+
+  // ---------- Toast 提示 ----------
+  let toastTimer = null;
+
+  function showToast(msg, duration = 2000) {
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      toast.classList.remove('show');
+    }, duration);
+  }
+
+  // ---------- 存储 ----------
+  function getKey(year, month, day) {
+    return `mood_${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+  }
+
+  function loadMood(year, month, day) {
+    const key = getKey(year, month, day);
+    return localStorage.getItem(key) || null;
+  }
+
+  function saveMood(year, month, day, val) {
+    const key = getKey(year, month, day);
+    if (val) {
+      localStorage.setItem(key, val);
+    } else {
+      localStorage.removeItem(key);
+    }
+  }
+
+  function clearMonth(year, month) {
+    const days = new Date(year, month + 1, 0).getDate();
+    for (let d = 1; d <= days; d++) {
+      const key = getKey(year, month, d);
+      localStorage.removeItem(key);
+    }
+    render();
+    showToast(`已清空 ${year}年 ${month+1}月 的记录`);
+  }
+
+  // ---------- 导出数据 ----------
+  function exportData() {
+    const data = {};
+    let count = 0;
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('mood_')) {
+        data[key] = localStorage.getItem(key);
+        count++;
+      }
+    }
+
+    if (count === 0) {
+      showToast('没有数据可以导出');
+      return;
+    }
+
+    const json = JSON.stringify(data, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+    a.download = `心情日历_${dateStr}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast(`✅ 成功导出 ${count} 条记录`);
+  }
+
+  // ---------- 导入数据 ----------
+  function importData(file) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const data = JSON.parse(e.target.result);
+        let count = 0;
+        let errorCount = 0;
+
+        for (const [key, value] of Object.entries(data)) {
+          if (key && key.startsWith('mood_') && typeof value === 'string') {
+            const datePart = key.replace('mood_', '');
+            if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
+              localStorage.setItem(key, value);
+              count++;
+            } else {
+              errorCount++;
+            }
+          } else {
+            errorCount++;
+          }
+        }
+
+        render();
+        if (errorCount > 0) {
+          showToast(`⚠️ 导入完成：${count} 条成功，${errorCount} 条跳过（格式错误）`);
+        } else {
+          showToast(`✅ 成功导入 ${count} 条记录`);
+        }
+      } catch (err) {
+        showToast('❌ 文件格式错误，请选择正确的 JSON 文件');
+        console.error('导入错误:', err);
+      }
+    };
+    reader.onerror = function() {
+      showToast('❌ 读取文件失败');
+    };
+    reader.readAsText(file);
+  }
+
+  // ---------- 渲染 ----------
+  function render() {
+    const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    let startOffset = (firstDay === 0) ? 6 : firstDay - 1;
+
+    monthLabel.textContent = `${currentYear}年 ${currentMonth+1}月`;
+
+    grid.innerHTML = '';
+    const total = Math.ceil((startOffset + daysInMonth) / 7) * 7;
+
+    for (let i = 0; i < total; i++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      if (i < startOffset || i >= startOffset + daysInMonth) {
+        cell.classList.add('empty');
+        grid.appendChild(cell);
+        continue;
+      }
+      const day = i - startOffset + 1;
+      const mood = loadMood(currentYear, currentMonth, day);
+      if (mood) {
+        cell.textContent = mood;
+        cell.classList.add('has-mood');
+        const bg = COLOR_MAP[mood] || '#2a2a44';
+        cell.style.background = bg;
+        cell.style.color = '#0b0b1a';
+      } else {
+        cell.textContent = day;
+        cell.style.background = '#1e1e32';
+        cell.style.color = '#d0d8e8';
+      }
+      cell.addEventListener('click', () => {
+        selectedDate = { year: currentYear, month: currentMonth, day };
+        openPicker(selectedDate);
+      });
+      grid.appendChild(cell);
+    }
+  }
+
+  // ---------- 选择器 ----------
+  function openPicker(date) {
+    const { year, month, day } = date;
+    pickerDate.textContent = `${year}年 ${month+1}月${day}日`;
+    moodGrid.innerHTML = '';
+    MOODS.forEach(m => {
+      const btn = document.createElement('button');
+      btn.className = 'mood-btn';
+      btn.innerHTML = `${m.emoji}<span class="label">${m.key}</span>`;
+      btn.addEventListener('click', () => {
+        saveMood(year, month, day, m.emoji);
+        picker.classList.remove('open');
+        render();
+        showToast(`✅ 已记录 ${m.emoji} ${m.key}`);
+      });
+      moodGrid.appendChild(btn);
+    });
+    picker.classList.add('open');
+  }
+
+  // ---------- 统计功能 ----------
+  function getStats() {
+    const stats = {};
+    const monthlyStats = {};
+    
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('mood_')) {
+        const mood = localStorage.getItem(key);
+        if (!mood) continue;
+        
+        const datePart = key.replace('mood_', '');
+        const [year, month] = datePart.split('-');
+        const monthKey = `${year}年${parseInt(month)}月`;
+        
+        if (!stats[mood]) stats[mood] = 0;
+        stats[mood]++;
+        
+        if (!monthlyStats[monthKey]) monthlyStats[monthKey] = {};
+        if (!monthlyStats[monthKey][mood]) monthlyStats[monthKey][mood] = 0;
+        monthlyStats[monthKey][mood]++;
+      }
+    }
+    
+    return { total: stats, monthly: monthlyStats };
+  }
+
+  function renderTotalPanel() {
+    const panel = document.getElementById('panel-total');
+    const data = getStats();
+    const sortedTotal = Object.entries(data.total).sort((a, b) => b[1] - a[1]);
+    const maxCount = sortedTotal.length > 0 ? sortedTotal[0][1] : 0;
+
+    if (sortedTotal.length === 0) {
+      panel.innerHTML = `<div class="stats-empty">💕 还没有记录呢，去填满你的心情吧</div>`;
+      return;
+    }
+
+    let html = `<div class="stats-total-grid">`;
+    sortedTotal.forEach(([mood, count]) => {
+      const bg = COLOR_MAP[mood] || '#4a4a6a';
+      const percent = maxCount > 0 ? (count / maxCount * 100) : 0;
+      html += `
+        <div class="stats-total-item">
+          <div class="top-row">
+            <span class="emoji">${mood}</span>
+            <span class="count">${count}次</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar-fill" style="width: ${percent}%; background: ${bg};"></div>
+          </div>
+        </div>
+      `;
+    });
+    html += `</div>`;
+    panel.innerHTML = html;
+  }
+
+  function renderMonthlyPanel() {
+    const panel = document.getElementById('panel-monthly');
+    const data = getStats();
+    const sortedMonths = Object.keys(data.monthly).sort();
+
+    if (sortedMonths.length === 0) {
+      panel.innerHTML = `<div class="stats-empty">💕 还没有记录呢，去填满你的心情吧</div>`;
+      return;
+    }
+
+    let html = '';
+    sortedMonths.forEach(month => {
+      const monthData = data.monthly[month];
+      const totalInMonth = Object.values(monthData).reduce((sum, n) => sum + n, 0);
+      const monthMax = Math.max(...Object.values(monthData));
+
+      html += `<div class="stats-month-item">`;
+      html += `<div class="stats-month-header">`;
+      html += `<span>${month}</span>`;
+      html += `<span class="stats-month-total">共 ${totalInMonth} 条</span>`;
+      html += `</div>`;
+
+      Object.entries(monthData).sort((a, b) => b[1] - a[1]).forEach(([mood, count]) => {
+        const bg = COLOR_MAP[mood] || '#4a4a6a';
+        const percent = monthMax > 0 ? (count / monthMax * 100) : 0;
+        html += `
+          <div class="stats-month-row">
+            <span class="emoji-box">${mood}</span>
+            <div class="bar-track">
+              <div class="bar-fill" style="width: ${percent}%; background: ${bg};"></div>
+            </div>
+            <span class="count">${count}</span>
+          </div>
+        `;
+      });
+
+      html += `</div>`;
+    });
+
+    panel.innerHTML = html;
+  }
+
+  function renderStats() {
+    renderTotalPanel();
+    renderMonthlyPanel();
+  }
+
+  // ---------- 事件绑定 ----------
+  document.getElementById('prevMonth').addEventListener('click', () => {
+    if (currentMonth === 0) { currentMonth = 11; currentYear--; }
+    else currentMonth--;
+    render();
+  });
+
+  document.getElementById('nextMonth').addEventListener('click', () => {
+    if (currentMonth === 11) { currentMonth = 0; currentYear++; }
+    else currentMonth++;
+    render();
+  });
+
+  pickerClose.addEventListener('click', () => {
+    picker.classList.remove('open');
+  });
+  picker.addEventListener('click', (e) => {
+    if (e.target === picker) picker.classList.remove('open');
+  });
+
+  document.getElementById('clearMonth').addEventListener('click', () => {
+    if (confirm(`确定要清空 ${currentYear}年 ${currentMonth+1}月 的所有心情记录吗？`)) {
+      clearMonth(currentYear, currentMonth);
+    }
+  });
+
+  // 今天按钮
+  document.getElementById('todayBtn').addEventListener('click', () => {
+    const now = new Date();
+    currentYear = now.getFullYear();
+    currentMonth = now.getMonth();
+    render();
+    showToast('已回到今天');
+  });
+
+  // 统计按钮
+  document.getElementById('statsBtn').addEventListener('click', () => {
+    renderStats();
+    document.getElementById('statsPicker').classList.add('open');
+    showToast('✨ 你的每一天我都会记住', 2000);
+  });
+
+  document.getElementById('statsClose').addEventListener('click', () => {
+    document.getElementById('statsPicker').classList.remove('open');
+  });
+
+  document.getElementById('statsPicker').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('statsPicker')) {
+      document.getElementById('statsPicker').classList.remove('open');
+    }
+  });
+
+  // Tab 切换
+  document.querySelectorAll('.stats-tab button').forEach(btn => {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.stats-tab button').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+
+      const tab = this.dataset.tab;
+      document.querySelectorAll('.stats-panel').forEach(p => p.classList.remove('active'));
+      document.getElementById(`panel-${tab}`).classList.add('active');
+    });
+  });
+
+  // 导出按钮
+  document.getElementById('exportBtn').addEventListener('click', exportData);
+
+  // 导入按钮
+  document.getElementById('importBtn').addEventListener('click', () => {
+    fileInput.click();
+  });
+
+  fileInput.addEventListener('change', function(e) {
+    if (this.files && this.files.length > 0) {
+      importData(this.files[0]);
+    }
+    this.value = '';
+  });
+
+  // 初始渲染
+  render();
+  showToast('💡 点击日期记录心情，支持导出/导入备份', 2500);
+</script>
+</body>
+</html>
