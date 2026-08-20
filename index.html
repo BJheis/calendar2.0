@@ -131,23 +131,14 @@
     min-width: 0;
     font-weight: 500;
   }
-  .cell.today {
-  border-color: #ffd866 !important;
-  box-shadow: 0 0 20px rgba(255, 216, 102, 0.5), inset 0 0 20px rgba(255, 216, 102, 0.08);
-  transform: scale(1.04);
-  position: relative;
-}
-.cell.today::after {
-  content: '';
-  position: absolute;
-  bottom: 4px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #ffd866;
-  box-shadow: 0 0 8px rgba(255, 216, 102, 0.6);
+  /* 替换 .cell.today 样式 - 更亮更扎眼 */
+.cell.today {
+  border-color: #ffb347 !important;  /* 使用更亮的橙色金 */
+  border-width: 3px !important;      /* 加粗边框 */
+  box-shadow: 0 0 25px rgba(255, 180, 70, 0.8), /* 外发光 */
+              inset 0 0 15px rgba(255, 180, 70, 0.2); /* 内发光 */
+  transform: scale(1.02);            /* 稍微大一点点 */
+  z-index: 5;                        /* 确保浮在其他格子上面 */
 }
   .cell.has-mood {
     font-size: clamp(11px, 1.8vw, 16px);
