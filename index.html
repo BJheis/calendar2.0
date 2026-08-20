@@ -260,53 +260,95 @@
     opacity: 1;
   }
 
-  /* 统计弹窗内的进度条 */
-  .stats-bar-wrap {
+  /* 统计弹窗样式 */
+  .stats-tab {
     display: flex;
-    align-items: center;
     gap: 8px;
+    margin-bottom: 16px;
+    justify-content: center;
+  }
+  .stats-tab button {
+    background: transparent;
+    border: 1px solid #3a3a5c;
+    color: #8a9aaa;
+    padding: 5px 20px;
+    border-radius: 20px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+  .stats-tab button:hover {
+    border-color: #ffe8b0;
+    color: #ffe8b0;
+  }
+  .stats-tab button.active {
+    border-color: #ffe8b0;
+    color: #ffe8b0;
+    background: rgba(255,232,176,0.08);
+  }
+
+  .stats-content {
+    min-height: 200px;
+  }
+  .stats-content .stats-panel {
+    display: none;
+  }
+  .stats-content .stats-panel.active {
+    display: block;
+  }
+
+  /* 总计网格 */
+  .stats-total-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 6px;
+  }
+  .stats-total-item {
+    background: #1a1a2e;
+    border-radius: 10px;
+    padding: 10px 10px 8px;
+    border: 1px solid #2a2a44;
+  }
+  .stats-total-item .top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 4px;
   }
-  .stats-bar-label {
+  .stats-total-item .emoji {
     font-size: 16px;
-    text-align: center;
-    flex-shrink: 0;
-    min-width: 36px;
     color: #d0d8e8;
   }
-  .stats-bar-track {
-    flex: 1;
+  .stats-total-item .count {
+    font-size: 13px;
+    color: #d0d8e8;
+    font-weight: 600;
+  }
+  .stats-total-item .bar-track {
     height: 12px;
     background: #1e1e32;
     border-radius: 10px;
     overflow: hidden;
     border: 1px solid #2a2a44;
-    position: relative;
   }
-  .stats-bar-fill {
+  .stats-total-item .bar-fill {
     height: 100%;
     border-radius: 10px;
     transition: width 0.6s ease;
     width: 0%;
   }
-  .stats-bar-count {
-    font-size: 12px;
-    color: #8a9aaa;
-    min-width: 28px;
-    text-align: right;
-    flex-shrink: 0;
-    font-weight: 600;
-  }
+
+  /* 月度统计卡片 */
   .stats-month-item {
     background: #16162a;
     border-radius: 12px;
-    padding: 10px 12px;
-    margin-bottom: 8px;
+    padding: 10px 14px;
+    margin-bottom: 10px;
   }
   .stats-month-header {
     color: #8a9aaa;
     font-size: 13px;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
     display: flex;
     justify-content: space-between;
   }
@@ -314,16 +356,46 @@
     color: #6a7a8a;
     font-size: 12px;
   }
-  .stats-total-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 6px;
+  .stats-month-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 3px;
   }
+  .stats-month-row .emoji-box {
+    width: 44px;
+    text-align: center;
+    flex-shrink: 0;
+    font-size: 16px;
+    color: #d0d8e8;
+  }
+  .stats-month-row .bar-track {
+    flex: 1;
+    height: 12px;
+    background: #1e1e32;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid #2a2a44;
+  }
+  .stats-month-row .bar-fill {
+    height: 100%;
+    border-radius: 10px;
+    transition: width 0.6s ease;
+    width: 0%;
+  }
+  .stats-month-row .count {
+    font-size: 12px;
+    color: #8a9aaa;
+    min-width: 28px;
+    text-align: right;
+    flex-shrink: 0;
+    font-weight: 600;
+  }
+
   .stats-empty {
     color: #6a7a8a;
     text-align: center;
-    padding: 20px 0;
-    grid-column: 1/-1;
+    padding: 30px 0;
   }
 
   /* 小屏适配 */
@@ -359,16 +431,13 @@
     .header .month {
       font-size: 17px;
     }
-    .stats-bar-label {
+    .stats-month-row .emoji-box {
+      width: 36px;
       font-size: 14px;
-      min-width: 30px;
     }
-    .stats-bar-track {
-      height: 10px;
-    }
-    .stats-bar-count {
-      font-size: 11px;
-      min-width: 24px;
+    .stats-tab button {
+      font-size: 12px;
+      padding: 4px 14px;
     }
   }
 
@@ -383,9 +452,9 @@
       font-size: 12px;
       border-radius: 8px;
     }
-    .stats-bar-label {
+    .stats-month-row .emoji-box {
+      width: 30px;
       font-size: 12px;
-      min-width: 26px;
     }
   }
 
@@ -407,9 +476,9 @@
     .weekday {
       font-size: 14px;
     }
-    .stats-bar-label {
+    .stats-month-row .emoji-box {
+      width: 50px;
       font-size: 18px;
-      min-width: 40px;
     }
   }
 </style>
@@ -459,11 +528,22 @@
 <!-- 统计弹窗 -->
 <div class="mood-picker" id="statsPicker">
   <div class="mood-box" style="max-width: 520px; max-height: 80vh; overflow-y: auto;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
       <div class="date-label" style="margin-bottom: 0; font-size: 18px; color: #ffe8b0;">🌟 心情统计</div>
       <button class="mood-close" id="statsClose" style="padding: 2px 16px; font-size: 16px;">✕</button>
     </div>
-    <div id="statsContent"></div>
+
+    <!-- Tab 切换按钮 -->
+    <div class="stats-tab">
+      <button class="active" data-tab="total">✨ 总计</button>
+      <button data-tab="monthly">📅 按月统计</button>
+    </div>
+
+    <!-- 内容区域 -->
+    <div class="stats-content" id="statsContent">
+      <div class="stats-panel active" id="panel-total"></div>
+      <div class="stats-panel" id="panel-monthly"></div>
+    </div>
   </div>
 </div>
 
@@ -727,80 +807,82 @@
     return { total: stats, monthly: monthlyStats };
   }
 
-  function renderStats() {
-    const content = document.getElementById('statsContent');
+  function renderTotalPanel() {
+    const panel = document.getElementById('panel-total');
     const data = getStats();
-    
-    let html = '';
-    
-    // ---- 总计 ----
-    html += `<div style="margin-bottom: 20px;">`;
-    html += `<div style="color: #ffe8b0; font-size: 14px; margin-bottom: 10px; border-bottom: 1px solid #3a3a5c; padding-bottom: 6px;">✨ 总计</div>`;
-    
     const sortedTotal = Object.entries(data.total).sort((a, b) => b[1] - a[1]);
     const maxCount = sortedTotal.length > 0 ? sortedTotal[0][1] : 0;
-    
+
     if (sortedTotal.length === 0) {
-      html += `<div class="stats-empty">💕 还没有记录呢，去填满你的心情吧</div>`;
-    } else {
-      html += `<div class="stats-total-grid">`;
-      sortedTotal.forEach(([mood, count]) => {
+      panel.innerHTML = `<div class="stats-empty">💕 还没有记录呢，去填满你的心情吧</div>`;
+      return;
+    }
+
+    let html = `<div class="stats-total-grid">`;
+    sortedTotal.forEach(([mood, count]) => {
+      const bg = COLOR_MAP[mood] || '#4a4a6a';
+      const percent = maxCount > 0 ? (count / maxCount * 100) : 0;
+      html += `
+        <div class="stats-total-item">
+          <div class="top-row">
+            <span class="emoji">${mood}</span>
+            <span class="count">${count}次</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar-fill" style="width: ${percent}%; background: ${bg};"></div>
+          </div>
+        </div>
+      `;
+    });
+    html += `</div>`;
+    panel.innerHTML = html;
+  }
+
+  function renderMonthlyPanel() {
+    const panel = document.getElementById('panel-monthly');
+    const data = getStats();
+    const sortedMonths = Object.keys(data.monthly).sort();
+
+    if (sortedMonths.length === 0) {
+      panel.innerHTML = `<div class="stats-empty">💕还没有记录呢，去填满你的心情吧</div>`;
+      return;
+    }
+
+    let html = '';
+    sortedMonths.forEach(month => {
+      const monthData = data.monthly[month];
+      const totalInMonth = Object.values(monthData).reduce((sum, n) => sum + n, 0);
+      const monthMax = Math.max(...Object.values(monthData));
+
+      html += `<div class="stats-month-item">`;
+      html += `<div class="stats-month-header">`;
+      html += `<span>${month}</span>`;
+      html += `<span class="stats-month-total">共 ${totalInMonth} 条</span>`;
+      html += `</div>`;
+
+      Object.entries(monthData).sort((a, b) => b[1] - a[1]).forEach(([mood, count]) => {
         const bg = COLOR_MAP[mood] || '#4a4a6a';
-        const percent = maxCount > 0 ? (count / maxCount * 100) : 0;
+        const percent = monthMax > 0 ? (count / monthMax * 100) : 0;
         html += `
-          <div style="background: #1a1a2e; border-radius: 10px; padding: 10px 10px 8px; border: 1px solid #2a2a44;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-              <span style="font-size: 16px; color: #d0d8e8;">${mood}</span>
-              <span style="font-size: 13px; color: #d0d8e8; font-weight: 600;">${count}次</span>
+          <div class="stats-month-row">
+            <span class="emoji-box">${mood}</span>
+            <div class="bar-track">
+              <div class="bar-fill" style="width: ${percent}%; background: ${bg};"></div>
             </div>
-            <div class="stats-bar-track" style="height: 12px;">
-              <div class="stats-bar-fill" style="width: ${percent}%; background: ${bg};"></div>
-            </div>
+            <span class="count">${count}</span>
           </div>
         `;
       });
+
       html += `</div>`;
-    }
-    html += `</div>`;
-    
-    // ---- 月度统计 ----
-    const sortedMonths = Object.keys(data.monthly).sort();
-    if (sortedMonths.length > 0) {
-      html += `<div style="margin-bottom: 8px;">`;
-      html += `<div style="color: #ffe8b0; font-size: 14px; margin-bottom: 10px; border-bottom: 1px solid #3a3a5c; padding-bottom: 6px;">✨ 按月统计</div>`;
-      
-      sortedMonths.forEach(month => {
-        const monthData = data.monthly[month];
-        const totalInMonth = Object.values(monthData).reduce((sum, n) => sum + n, 0);
-        const monthMax = Math.max(...Object.values(monthData));
-        
-        html += `<div class="stats-month-item">`;
-        html += `<div class="stats-month-header">`;
-        html += `<span>${month}</span>`;
-        html += `<span class="stats-month-total">共 ${totalInMonth} 条</span>`;
-        html += `</div>`;
-        
-        Object.entries(monthData).sort((a, b) => b[1] - a[1]).forEach(([mood, count]) => {
-          const bg = COLOR_MAP[mood] || '#4a4a6a';
-          const percent = monthMax > 0 ? (count / monthMax * 100) : 0;
-          html += `
-            <div class="stats-bar-wrap">
-              <span class="stats-bar-label" style="color: #d0d8e8;">${mood}</span>
-              <div class="stats-bar-track" style="height: 12px;">
-                <div class="stats-bar-fill" style="width: ${percent}%; background: ${bg};"></div>
-              </div>
-              <span class="stats-bar-count">${count}</span>
-            </div>
-          `;
-        });
-        
-        html += `</div>`;
-      });
-      
-      html += `</div>`;
-    }
-    
-    content.innerHTML = html;
+    });
+
+    panel.innerHTML = html;
+  }
+
+  function renderStats() {
+    renderTotalPanel();
+    renderMonthlyPanel();
   }
 
   // ---------- 事件绑定 ----------
@@ -853,6 +935,18 @@
     if (e.target === document.getElementById('statsPicker')) {
       document.getElementById('statsPicker').classList.remove('open');
     }
+  });
+
+  // Tab 切换
+  document.querySelectorAll('.stats-tab button').forEach(btn => {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.stats-tab button').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+
+      const tab = this.dataset.tab;
+      document.querySelectorAll('.stats-panel').forEach(p => p.classList.remove('active'));
+      document.getElementById(`panel-${tab}`).classList.add('active');
+    });
   });
 
   // 导出按钮
