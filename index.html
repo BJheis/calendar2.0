@@ -607,10 +607,6 @@
         cell.style.background = '#1e1e32';
         cell.style.color = '#d0d8e8';
       }
-      // 今天高亮（金色光圈）
-      if (isTodayMonth && day === today.getDate()) {
-        cell.classList.add('today');
-      }
       cell.addEventListener('click', () => {
         selectedDate = { year: currentYear, month: currentMonth, day };
         openPicker(selectedDate);
